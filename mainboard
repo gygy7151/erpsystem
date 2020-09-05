@@ -1,0 +1,96 @@
+<template>
+<q-page padding style="padding-top: 56px">
+<q-table title="공지사항" :data="data"
+:columns="columns"
+:loading="requesting"
+:pagination.sync="pagination"
+:filter="filter" selection="multiple"
+:selected.sync="selected"
+@selection ="confirmDelete"
+@request="tableRequest"
+row-key="id" binary-state-sort>
+<template v-slot:top-right>
+<q-input outlined dense debounce="300" v-model="filter" placeholder="검색">
+<template v-slot:append>
+<q-icon name="search" />
+</template>
+</q-input>
+</template>
+<template v-slot:top-left>
+<h5 class="q-ma-none" v-if="!selected.length">공지사항</h5>
+<q-btn icon="delete" color="negative" v-if="selected.length"></q-btn>
+</template>
+<template v-slot:body-cell-title="props">
+<q-td :props="props">
+<router-link :to="/notices/${props.row.id}" class="styled-link">{{ props.value }}</router-link>
+</q-td>
+</template>
+<template v-slot:body-cell-attachments="props">
+<q-td :props="props">
+<q-chip size="sm" icon="attachment" :label="props.value" v-if="props.value > 0" />
+</q-td>
+</template>
+</q-table>
+<q-page-sticky expand position="top">
+<q-toolbar class="page-toolbar">
+<q-breadcrumbs active-color="blue-grey-3">
+<q-breadcrumbs-el label="홈" icon="home" to="/" />
+<q-breadcrumbs-el label="공지사항" />
+</q-breadcrumbs>
+<q-space />
+<q-separator vertical color="blue-grey-5" />
+<q-btn label="공지등록" to="/notices/create" flat :dense="$q.screen.xs" />
+</q-toolbar>
+</q-page-sticky>
+</q-page>
+</template>
+<script>
+import dataTableMixin from '../mixins/serverSyncDataTable';
+export default {
+name: 'NoticesPage',
+mixins: [dataTableMixin],
+data() {
+return {
+requestUrl: '/api/notice',
+columns: [
+{ name: 'id', field: 'id', label: '', sortable: true, align: 'left' },
+{ name: 'title', field: 'title', label: '제목', sortable: true, align: 'left' },
+{ name: 'attachments', field: 'attachments_count', label: '첨부파일' },
+{ name: 'view', field: 'checked_users_count', label: '조회 수', align: 'right' },
+{ name: 'created_at', field: 'created_at', label: '작성일시', sortable: true },
+],
+pagination: {
+sortBy: 'created_at',
+descending: true,
+},
+method: {
+confirmDelete() {
+this.$q.dialog({
+title: '<span class="text-negative">삭제확인</span>',
+message: '정말 삭제하시겠습니까?',
+html: true,
+focus: 'none',
+cancel: true,
+ok: {
+flat: true,
+color: 'negative',
+loading: this.requesting,
+},
+}).onOk(() => {
+this.confirmDelte = 'delete';
+this.request();
+}).then((res) => {
+this.requestUrl = res.data;
+this.selected = [];
+})
+.catch((error) => {
+console.error(error);
+})
+.finally(() => {
+});
+},
+},
+};
+},
+};
+</script>
